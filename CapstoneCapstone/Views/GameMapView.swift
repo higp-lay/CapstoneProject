@@ -4,14 +4,14 @@ class Scenario: Identifiable {
     let id = UUID()
     let title: String
     let description: String
-    let isCompleted: Bool
-    let position: CGPoint
+    var isCompleted: Bool
+    var position: CGPoint
     let difficulty: String
     let icon: String
-    let isLocked: Bool
+    var isLocked: Bool
     var connections: [UUID]
     
-    init(title: String, description: String, isCompleted: Bool, position: CGPoint, difficulty: String, icon: String, isLocked: Bool, connections: [UUID]) {
+    init(title: String, description: String, isCompleted: Bool, position: CGPoint, difficulty: String, icon: String, isLocked: Bool) {
         self.title = title
         self.description = description
         self.isCompleted = isCompleted
@@ -19,206 +19,193 @@ class Scenario: Identifiable {
         self.difficulty = difficulty
         self.icon = icon
         self.isLocked = isLocked
-        self.connections = connections
+        self.connections = []  // Initialize as empty
+    }
+    
+    // Helper method to connect scenarios
+    func connectTo(_ scenario: Scenario) {
+        connections.append(scenario.id)
     }
 }
 
 struct GameMapView: View {
-    @State private var scenarios: [Scenario] = []
-    @State private var scale: CGFloat = 1.0
-    
-    var body: some View {
-        NavigationView {
-            ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                ZStack {
-                    // Connection lines
-                    ForEach(scenarios) { scenario in
-                        ForEach(scenario.connections, id: \.self) { connectionId in
-                            if let connectedScenario = scenarios.first(where: { $0.id == connectionId }) {
-                                ConnectionLine(
-                                    start: scenario.position,
-                                    end: connectedScenario.position
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Scenario nodes
-                    ForEach(scenarios) { scenario in
-                        ScenarioNode(scenario: scenario)
-                            .position(scenario.position)
-                    }
-                }
-                .frame(width: 1200, height: 800)
-                .scaleEffect(scale)
-                .gesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            scale = min(max(value.magnitude, 0.5), 3.0)
-                        }
-                )
-            }
-            .navigationTitle("Medical Journey")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        .onAppear {
-            generateScenarios()
-        }
-    }
-    
-    private func generateScenarios() {
+    @State private var scenarios: [Scenario] = {
+        let progress = ProgressManager.shared.currentProgress
+        
         let emergencyRoom = Scenario(
             title: "Emergency Room",
-            description: "A critical patient arrives with multiple injuries. Time is of the essence.",
-            isCompleted: false,
+            description: "A critical patient arrives from a car accident. Quick decisions are needed.",
+            isCompleted: progress.completedScenarios["Emergency Room"]?.isCompleted ?? false,
             position: CGPoint(x: 300, y: 400),
             difficulty: "Easy",
-            icon: "cross.case.fill",
-            isLocked: false,
-            connections: []
+            icon: "cross.circle.fill",
+            isLocked: progress.completedScenarios["Emergency Room"]?.isLocked ?? true
         )
         
-        let resourceAllocation = Scenario(
-            title: "Resource Allocation",
-            description: "Multiple patients need attention. How do you allocate limited resources?",
-            isCompleted: false,
-            position: CGPoint(x: 500, y: 300),
+        let surgeryWard = Scenario(
+            title: "Surgery Ward",
+            description: "Complex surgery case requiring careful planning and execution.",
+            isCompleted: progress.completedScenarios["Surgery Ward"]?.isCompleted ?? false,
+            position: CGPoint(x: 250, y: 300),
             difficulty: "Medium",
-            icon: "person.2.fill",
-            isLocked: true,
-            connections: []
+            icon: "heart.circle.fill",
+            isLocked: progress.completedScenarios["Surgery Ward"]?.isLocked ?? true
         )
         
-        let treatmentPriority = Scenario(
-            title: "Treatment Priority",
-            description: "Choose between treating a critical but complex case or multiple stable patients.",
-            isCompleted: false,
-            position: CGPoint(x: 500, y: 500),
-            difficulty: "Medium",
-            icon: "list.bullet.clipboard",
-            isLocked: true,
-            connections: []
+        let initialDecision = Scenario(
+            title: "Initial Decision",
+            description: "Your journey begins with an important medical decision.",
+            isCompleted: progress.completedScenarios["Initial Decision"]?.isCompleted ?? false,
+            position: CGPoint(x: 100, y: 200),
+            difficulty: "Easy",
+            icon: "play.fill",
+            isLocked: progress.completedScenarios["Initial Decision"]?.isLocked ?? false
         )
         
-        let familyConflict = Scenario(
-            title: "Family Conflict",
-            description: "Navigate a complex family disagreement about treatment options.",
-            isCompleted: false,
-            position: CGPoint(x: 700, y: 200),
-            difficulty: "Hard",
-            icon: "person.2.circle",
-            isLocked: true,
-            connections: []
-        )
+        // Connect scenarios
+        initialDecision.connectTo(emergencyRoom)
+        emergencyRoom.connectTo(surgeryWard)
         
-        let surgicalDecision = Scenario(
-            title: "Surgical Decision",
-            description: "Choose between two risky surgical procedures.",
-            isCompleted: false,
-            position: CGPoint(x: 700, y: 400),
-            difficulty: "Hard",
-            icon: "heart.text.square",
-            isLocked: true,
-            connections: []
-        )
+        return [initialDecision, emergencyRoom, surgeryWard]
+    }()
+    
+    @State private var selectedScenario: Scenario?
+    @State private var showingDetail = false
+    @State private var mapOffset = CGSize.zero  // For map panning
+    @State private var mapScale: CGFloat = 1.0  // For map zooming
+    @GestureState private var dragOffset = CGSize.zero
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                ZStack {
+                    // Background
+                    Color.gray.opacity(0.1)
+                        .frame(width: max(geometry.size.width * 2, 1000),
+                               height: max(geometry.size.height * 2, 1000))
+                    
+                    // Map Content
+                    ZStack {
+                        // Connection lines - Updated to include dragOffset
+                        ForEach(scenarios) { scenario in
+                            ForEach(scenario.connections, id: \.self) { connectionId in
+                                if let targetScenario = scenarios.first(where: { $0.id == connectionId }) {
+                                    ConnectionLine(
+                                        start: CGPoint(
+                                            x: scenario.position.x + mapOffset.width + dragOffset.width,
+                                            y: scenario.position.y + mapOffset.height + dragOffset.height
+                                        ),
+                                        end: CGPoint(
+                                            x: targetScenario.position.x + mapOffset.width + dragOffset.width,
+                                            y: targetScenario.position.y + mapOffset.height + dragOffset.height
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Scenario nodes
+                        ForEach(scenarios) { scenario in
+                            ScenarioNode(scenario: scenario)
+                                .position(
+                                    x: scenario.position.x + mapOffset.width + dragOffset.width,
+                                    y: scenario.position.y + mapOffset.height + dragOffset.height
+                                )
+                                .onTapGesture {
+                                    selectedScenario = scenario
+                                    showingDetail = true
+                                }
+                        }
+                    }
+                    .scaleEffect(mapScale)
+                }
+                .gesture(
+                    SimultaneousGesture(
+                        DragGesture()
+                            .updating($dragOffset) { value, state, _ in
+                                state = value.translation
+                            }
+                            .onEnded { value in
+                                mapOffset.width += value.translation.width
+                                mapOffset.height += value.translation.height
+                            },
+                        MagnificationGesture()
+                            .onChanged { scale in
+                                let delta = scale - 1.0
+                                mapScale = max(0.5, min(2.0, mapScale + delta))
+                            }
+                    )
+                )
+            }
+            .sheet(isPresented: $showingDetail) {
+                if let scenario = selectedScenario {
+                    ScenarioDetailView(scenario: scenario)
+                }
+            }
+        }
+        .navigationTitle("Game Map")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    // Function to unlock a scenario
+    func unlockScenario(at index: Int) {
+        guard index < scenarios.count else { return }
+        scenarios[index].isLocked = false
+    }
+    
+    // Function to mark a scenario as completed and unlock the next one
+    func completeScenario(at index: Int) {
+        guard index < scenarios.count else { return }
+        scenarios[index].isCompleted = true
         
-        let ethicalDilemma = Scenario(
-            title: "Ethical Dilemma",
-            description: "Make a difficult ethical decision that will affect multiple lives.",
-            isCompleted: false,
-            position: CGPoint(x: 700, y: 600),
-            difficulty: "Hard",
-            icon: "scale.3d",
-            isLocked: true,
-            connections: []
-        )
-        
-        let criticalMoment = Scenario(
-            title: "Critical Moment",
-            description: "A life-or-death decision must be made immediately.",
-            isCompleted: false,
-            position: CGPoint(x: 900, y: 300),
-            difficulty: "Hard",
-            icon: "timer",
-            isLocked: true,
-            connections: []
-        )
-        
-        let finalDecision = Scenario(
-            title: "Final Decision",
-            description: "Your final choice will determine the ultimate outcome.",
-            isCompleted: false,
-            position: CGPoint(x: 900, y: 500),
-            difficulty: "Hard",
-            icon: "arrow.triangle.branch",
-            isLocked: true,
-            connections: []
-        )
-        
-        let outcomeA = Scenario(
-            title: "Best Outcome",
-            description: "The patient makes a full recovery.",
-            isCompleted: false,
-            position: CGPoint(x: 1100, y: 200),
-            difficulty: "Final",
-            icon: "checkmark.circle",
-            isLocked: true,
-            connections: []
-        )
-        
-        let outcomeB = Scenario(
-            title: "Mixed Outcome",
-            description: "The patient stabilizes but faces challenges.",
-            isCompleted: false,
-            position: CGPoint(x: 1100, y: 400),
-            difficulty: "Final",
-            icon: "arrow.triangle.2.circlepath",
-            isLocked: true,
-            connections: []
-        )
-        
-        let outcomeC = Scenario(
-            title: "Challenging Outcome",
-            description: "The situation takes an unexpected turn.",
-            isCompleted: false,
-            position: CGPoint(x: 1100, y: 600),
-            difficulty: "Final",
-            icon: "exclamationmark.triangle",
-            isLocked: true,
-            connections: []
-        )
-        
-        // Add all scenarios to array
-        scenarios = [
-            emergencyRoom,
-            resourceAllocation,
-            treatmentPriority,
-            familyConflict,
-            surgicalDecision,
-            ethicalDilemma,
-            criticalMoment,
-            finalDecision,
-            outcomeA,
-            outcomeB,
-            outcomeC
-        ]
-        
-        // Set up connections
-        emergencyRoom.connections = [resourceAllocation.id, treatmentPriority.id]
-        resourceAllocation.connections = [familyConflict.id, surgicalDecision.id]
-        treatmentPriority.connections = [surgicalDecision.id, ethicalDilemma.id]
-        familyConflict.connections = [criticalMoment.id]
-        surgicalDecision.connections = [criticalMoment.id, finalDecision.id]
-        ethicalDilemma.connections = [finalDecision.id]
-        criticalMoment.connections = [outcomeA.id, outcomeB.id]
-        finalDecision.connections = [outcomeB.id, outcomeC.id]
+        // Unlock connected scenarios
+        let completedScenario = scenarios[index]
+        for connectionId in completedScenario.connections {
+            if let connectedIndex = scenarios.firstIndex(where: { $0.id == connectionId }) {
+                scenarios[connectedIndex].isLocked = false
+            }
+        }
+    }
+    
+    private func completeScenario(_ scenario: Scenario) {
+        if let index = scenarios.firstIndex(where: { $0.id == scenario.id }) {
+            ProgressManager.shared.completeScenario(scenario.title)
+            // Refresh scenarios array to reflect new progress
+            let progress = ProgressManager.shared.currentProgress
+            
+            // Update the current scenario's status
+            scenarios[index].isCompleted = true
+            
+            // Update connected scenarios' locked status
+            for connectionId in scenarios[index].connections {
+                if let connectedIndex = scenarios.firstIndex(where: { $0.id == connectionId }) {
+                    scenarios[connectedIndex].isLocked = false
+                }
+            }
+        }
+    }
+    
+    // Add this to ScenarioDetailView to handle completion
+    private func onScenarioComplete() {
+        if let scenario = selectedScenario {
+            completeScenario(scenario)
+        }
     }
 }
+
+#if DEBUG
+struct GameMapView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationStack {
+            GameMapView()
+        }
+    }
+}
+#endif
 
 struct ConnectionLine: View {
     let start: CGPoint
     let end: CGPoint
-    let nodeRadius: CGFloat = 35
     
     var body: some View {
         Path { path in
@@ -263,15 +250,15 @@ struct ScenarioDetailView: View {
                             .multilineTextAlignment(.center)
                         
                         // Difficulty Badge
-                        Text(scenario.difficulty)
-                            .font(.subheadline)
-                            .foregroundColor(difficultyColor(scenario.difficulty))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(difficultyColor(scenario.difficulty).opacity(0.1))
-                            )
+//                        Text(scenario.difficulty)
+//                            .font(.subheadline)
+//                            .foregroundColor(difficultyColor(scenario.difficulty))
+//                            .padding(.horizontal, 16)
+//                            .padding(.vertical, 8)
+//                            .background(
+//                                Capsule()
+//                                    .fill(difficultyColor(scenario.difficulty).opacity(0.1))
+//                            )
                     }
                     
                     // Description
@@ -288,7 +275,9 @@ struct ScenarioDetailView: View {
                     
                     // Start Button
                     if !scenario.isLocked {
-                        NavigationLink(destination: EmergencyRoomScene(), isActive: $isShowingScenario) {
+                        Button {
+                            isShowingScenario = true
+                        } label: {
                             HStack {
                                 Image(systemName: "play.fill")
                                 Text("Begin Scenario")
@@ -301,9 +290,9 @@ struct ScenarioDetailView: View {
                             .cornerRadius(15)
                         }
                         .padding(.horizontal)
-                        .simultaneousGesture(TapGesture().onEnded {
-                            dismiss()
-                        })
+                        .navigationDestination(isPresented: $isShowingScenario) {
+                            destinationForScenario(scenario)
+                        }
                     } else {
                         // Locked message
                         HStack {
@@ -330,6 +319,18 @@ struct ScenarioDetailView: View {
         }
     }
     
+    @ViewBuilder
+    private func destinationForScenario(_ scenario: Scenario) -> some View {
+        switch scenario.title {
+        case "Initial Decision":
+            InitialDecision()
+        case "Emergency Room":
+            EmergencyRoomScene()
+        default:
+            EmergencyRoomScene() // Default fallback
+        }
+    }
+    
     private func difficultyColor(_ difficulty: String) -> Color {
         switch difficulty {
         case "Easy": return .green
@@ -341,66 +342,55 @@ struct ScenarioDetailView: View {
     }
 }
 
-// Update the ScenarioNode struct
 struct ScenarioNode: View {
     let scenario: Scenario
-    @State private var isShowingDetail = false
     
     var body: some View {
-        Button(action: {
-            isShowingDetail.toggle()
-        }) {
-            VStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(scenario.isLocked ? Color.gray.opacity(0.3) : Color.blue.opacity(0.2))
-                        .frame(width: 70, height: 70)
-                    
-                    if scenario.isLocked {
-                        Image(systemName: "lock.fill")
-                            .foregroundColor(.gray)
-                            .font(.system(size: 24))
-                    } else {
-                        Image(systemName: scenario.icon)
-                            .foregroundColor(.blue)
-                            .font(.system(size: 24))
-                    }
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(nodeColor)
+                    .frame(width: 70, height: 70)
+                    .shadow(color: nodeColor.opacity(0.3), radius: 5)
+                
+                if scenario.isLocked {
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.white)
+                        .font(.system(size: 24))
+                } else {
+                    Image(systemName: scenario.icon)
+                        .foregroundColor(.white)
+                        .font(.system(size: 24))
                 }
                 
-                Text(scenario.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(scenario.isLocked ? .gray : .primary)
-                    .multilineTextAlignment(.center)
-                
-                Text(scenario.difficulty)
-                    .font(.caption2)
-                    .foregroundColor(difficultyColor(scenario.difficulty))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(difficultyColor(scenario.difficulty).opacity(0.2))
-                    )
+                if scenario.isCompleted {
+                    Circle()
+                        .strokeBorder(Color.green, lineWidth: 3)
+                        .frame(width: 70, height: 70)
+                }
             }
+            
+            Text(scenario.title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(scenario.isLocked ? .gray : .primary)
+                .multilineTextAlignment(.center)
+                .frame(width: 100)
         }
-        .sheet(isPresented: $isShowingDetail) {
-            ScenarioDetailView(scenario: scenario)
-        }
-        .disabled(scenario.isLocked)
     }
     
-    private func difficultyColor(_ difficulty: String) -> Color {
-        switch difficulty {
-        case "Easy": return .green
+    private var nodeColor: Color {
+        if scenario.isLocked {
+            return .gray
+        }
+        if scenario.isCompleted {
+            return .green
+        }
+        switch scenario.difficulty {
+        case "Easy": return .blue
         case "Medium": return .orange
         case "Hard": return .red
-        case "Final": return .purple
         default: return .blue
         }
     }
 }
-
-#Preview {
-    GameMapView()
-} 
