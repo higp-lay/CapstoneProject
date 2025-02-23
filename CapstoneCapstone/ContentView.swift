@@ -8,6 +8,16 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showAchievements = false
+    @StateObject private var achievementNotificationManager = AchievementNotificationManager.shared
+    @State private var hasCheckedFirstLogin = false
+    @State private var showingNameInput = UserSettingsManager.shared.isFirstLaunch
+    @State private var showingGameMap = false
+    @State private var showingStorySelection = false
+    
+    // Add this to track first launch
+    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
+    
     init() {
         // Load custom font if needed
         // This is optional if you've properly added the font to your project
@@ -46,7 +56,9 @@ struct ContentView: View {
                     // Buttons area
                     VStack(spacing: 25) {
                         // Start Journey Button
-                        NavigationLink(destination: GameMapView()) {
+                        Button {
+                            showingStorySelection = true
+                        } label: {
                             HStack {
                                 Image(systemName: "play.fill")
                                 Text("Start Journey")
@@ -60,6 +72,26 @@ struct ContentView: View {
                                 RoundedRectangle(cornerRadius: 20)
                                     .fill(Color.blue)
                                     .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
+                            )
+                        }
+                        
+                        // Achievements Button
+                        Button {
+                            showAchievements = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "trophy.fill")
+                                Text("Achievements")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 60)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color.orange)
+                                    .shadow(color: .orange.opacity(0.3), radius: 10, x: 0, y: 5)
                             )
                         }
                         
@@ -95,7 +127,7 @@ struct ContentView: View {
                                 .foregroundColor(.gray)
                         }
                         Spacer()
-                        Text("v 0.1")
+                        Text("v 0.2")
                             .font(.footnote)
                             .foregroundColor(.gray)
                             .padding(.horizontal, 10)
@@ -109,6 +141,42 @@ struct ContentView: View {
                     .padding(.bottom, 20)
                 }
             }
+        }
+        .sheet(isPresented: $showingNameInput) {
+            // After name input is dismissed, check first login
+            if !hasCheckedFirstLogin {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    AchievementManager.shared.checkFirstLogin()
+                    hasCheckedFirstLogin = true
+                }
+            }
+        } content: {
+            PlayerNameInputView(isPresented: $showingNameInput)
+        }
+        .sheet(isPresented: $showAchievements) {
+            AchievementsView()
+        }
+        .sheet(isPresented: $showingStorySelection) {
+            StorySelectionView()
+        }
+        .overlay {
+            if achievementNotificationManager.showingAchievement,
+               let achievement = achievementNotificationManager.currentAchievement {
+                AchievementPopupView(
+                    achievement: achievement,
+                    isPresented: $achievementNotificationManager.showingAchievement
+                )
+            }
+        }
+        .onAppear {
+            // Reset progress on first launch
+            if !hasLaunchedBefore {
+                ProgressManager.shared.resetStoryline()
+                hasLaunchedBefore = true
+            }
+            
+            // Check if we need to show name input
+            showingNameInput = UserSettingsManager.shared.isFirstLaunch
         }
     }
 }

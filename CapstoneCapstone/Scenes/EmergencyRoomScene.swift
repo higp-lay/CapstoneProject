@@ -1,19 +1,7 @@
 import SwiftUI
+import Foundation
 
-struct DialogueItem {
-    let text: String
-    let systemImage: String
-}
-
-struct Choice: Identifiable {
-    let id = UUID()
-    let text: String
-    let consequence: String
-    let impact: Int
-    let isCorrect: Bool
-    let systemImage: String
-}
-
+@available(iOS 13.0, macOS 12.0, *)
 struct EmergencyRoomScene: View {
     @Environment(\.dismiss) var dismiss
     @State private var currentDialogue = 0
@@ -23,23 +11,28 @@ struct EmergencyRoomScene: View {
     @State private var timer: Timer?
     @State private var showConsequence = false
     @State private var currentConsequence = ""
+    var onComplete: (() -> Void)?
     
     let dialogues = [
         DialogueItem(
-            text: "Nurse: Doctor! We have a critical patient coming in from a car accident.",
-            systemImage: "person.crop.circle.badge.exclamationmark"
+            text: "Doctor! We have a critical patient coming in from a car accident.",
+            systemImage: "person.crop.circle.badge.exclamationmark",
+            speaker: "Nurse"
         ),
         DialogueItem(
-            text: "Paramedic: Male, 35, severe trauma to the chest and possible internal bleeding.",
-            systemImage: "heart.circle.fill"
+            text: "Male, 35, severe trauma to the chest and possible internal bleeding.",
+            systemImage: "heart.circle.fill",
+            speaker: "Paramedic"
         ),
         DialogueItem(
-            text: "Nurse: Blood pressure dropping, heart rate irregular.",
-            systemImage: "waveform.path.ecg"
+            text: "Blood pressure dropping, heart rate irregular.",
+            systemImage: "waveform.path.ecg",
+            speaker: "Nurse"
         ),
         DialogueItem(
             text: "*Patient arrives looking severely injured*",
-            systemImage: "bed.double.circle"
+            systemImage: "bed.double.circle",
+            speaker: "Narrator"
         )
     ]
     
@@ -47,23 +40,20 @@ struct EmergencyRoomScene: View {
         Choice(
             text: "Order immediate CT scan",
             consequence: "The scan reveals critical internal bleeding that needs immediate attention.",
-            impact: -10,
-            isCorrect: false,
-            systemImage: "rays"
+            systemImage: "rays",
+            unlocksScenario: nil
         ),
         Choice(
             text: "Start immediate blood transfusion",
             consequence: "The patient's blood pressure begins to stabilize.",
-            impact: +10,
-            isCorrect: true,
-            systemImage: "drop.fill"
+            systemImage: "drop.fill",
+            unlocksScenario: nil
         ),
         Choice(
             text: "Begin exploratory surgery",
             consequence: "The patient's condition becomes more unstable during preparation.",
-            impact: -20,
-            isCorrect: false,
-            systemImage: "scissors"
+            systemImage: "scissors",
+            unlocksScenario: nil
         )
     ]
     
@@ -111,14 +101,22 @@ struct EmergencyRoomScene: View {
                                 // Dialogue Box
                                 VStack(spacing: geometry.size.height * 0.02) {
                                     HStack(alignment: .top, spacing: geometry.size.width * 0.04) {
-                                        // Character Icon
-                                        Image(systemName: dialogues[currentDialogue].systemImage)
-                                            .font(.system(size: geometry.size.width * 0.08))
-                                            .foregroundColor(.white)
-                                            .frame(width: geometry.size.width * 0.15, height: geometry.size.width * 0.15)
-                                            .background(Color.blue)
-                                            .clipShape(Circle())
-                                            .shadow(color: .blue.opacity(0.3), radius: 5)
+                                        VStack(spacing: 5) {
+                                            // Character Icon
+                                            Image(systemName: dialogues[currentDialogue].systemImage)
+                                                .font(.system(size: geometry.size.width * 0.08))
+                                                .foregroundColor(.white)
+                                                .frame(width: geometry.size.width * 0.15, height: geometry.size.width * 0.15)
+                                                .background(Color.blue)
+                                                .clipShape(Circle())
+                                                .shadow(color: .blue.opacity(0.3), radius: 5)
+                                            
+                                            // Speaker Name
+                                            Text(dialogues[currentDialogue].speaker)
+                                                .font(.system(size: geometry.size.width * 0.035))
+                                                .foregroundColor(.blue)
+                                                .fontWeight(.medium)
+                                        }
                                         
                                         // Dialogue Text
                                         Text(dialogues[currentDialogue].text)
@@ -186,7 +184,9 @@ struct EmergencyRoomScene: View {
                 }
             }
             .navigationTitle("Emergency Room")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Exit") {
@@ -207,99 +207,41 @@ struct EmergencyRoomScene: View {
     }
     
     private func makeChoice(_ choice: Choice) {
-        patientStatus += choice.impact
         currentConsequence = choice.consequence
         showConsequence = true
         
-        // Add timer to dismiss consequence message
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            showConsequence = false
+        // Complete this scenario
+        ProgressManager.shared.completeScenario("Emergency Room")
+        
+        // If this choice unlocks a scenario, unlock it
+        if let scenarioToUnlock = choice.unlocksScenario {
+            ProgressManager.shared.unlockScenario(scenarioToUnlock)
         }
-    }
-}
-
-// MARK: - Supporting Views
-struct StatusCard: View {
-    let icon: String
-    let title: String
-    let value: String
-    let color: Color
-    let size: CGSize
-    
-    var body: some View {
-        HStack(spacing: size.width * 0.03) {
-            Image(systemName: icon)
-                .font(.system(size: size.width * 0.06))
-                .foregroundColor(color)
-            
-            VStack(alignment: .leading, spacing: size.height * 0.005) {
-                Text(title)
-                    .font(.system(size: size.width * 0.035))
-                    .foregroundColor(.gray)
-                Text(value)
-                    .font(.system(size: size.width * 0.045))
-                    .fontWeight(.bold)
+        
+        // Show consequence, then dismiss and show achievement
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                showConsequence = false
             }
             
-            Spacer()
+            // Call completion and dismiss
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                onComplete?()
+                dismiss()
+                
+                // Show achievement after dismissal
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    AchievementManager.shared.unlockAchievement(id: "emergency_complete")
+                }
+            }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 5)
-        )
     }
 }
 
-struct ChoiceCard: View {
-    let choice: Choice
-    let size: CGSize
-    
-    var body: some View {
-        HStack {
-            Image(systemName: choice.systemImage)
-                .font(.system(size: size.width * 0.06))
-                .foregroundColor(.blue)
-                .frame(width: size.width * 0.1)
-            
-            Text(choice.text)
-                .font(.system(size: size.width * 0.04))
-                .fontWeight(.medium)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 5)
-        )
+#if DEBUG
+struct EmergencyRoomScene_Previews: PreviewProvider {
+    static var previews: some View {
+        EmergencyRoomScene()
     }
 }
-
-struct CustomButtonStyle: ButtonStyle {
-    let size: CGSize
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: size.width * 0.045))
-            .padding(.horizontal, size.width * 0.08)
-            .padding(.vertical, size.height * 0.015)
-            .background(
-                RoundedRectangle(cornerRadius: 25)
-                    .fill(Color.blue)
-                    .shadow(color: Color.blue.opacity(0.3), radius: 5)
-            )
-            .foregroundColor(.white)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.spring(), value: configuration.isPressed)
-    }
-}
-
-#Preview {
-    EmergencyRoomScene()
-} 
+#endif 

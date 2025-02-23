@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 class Scenario: Identifiable {
     let id = UUID()
@@ -28,52 +29,20 @@ class Scenario: Identifiable {
     }
 }
 
+@available(iOS 13.0, macOS 12.0, *)
 struct GameMapView: View {
-    @State private var scenarios: [Scenario] = {
-        let progress = ProgressManager.shared.currentProgress
-        
-        let emergencyRoom = Scenario(
-            title: "Emergency Room",
-            description: "A critical patient arrives from a car accident. Quick decisions are needed.",
-            isCompleted: progress.completedScenarios["Emergency Room"]?.isCompleted ?? false,
-            position: CGPoint(x: 300, y: 400),
-            difficulty: "Easy",
-            icon: "cross.circle.fill",
-            isLocked: progress.completedScenarios["Emergency Room"]?.isLocked ?? true
-        )
-        
-        let surgeryWard = Scenario(
-            title: "Surgery Ward",
-            description: "Complex surgery case requiring careful planning and execution.",
-            isCompleted: progress.completedScenarios["Surgery Ward"]?.isCompleted ?? false,
-            position: CGPoint(x: 250, y: 300),
-            difficulty: "Medium",
-            icon: "heart.circle.fill",
-            isLocked: progress.completedScenarios["Surgery Ward"]?.isLocked ?? true
-        )
-        
-        let initialDecision = Scenario(
-            title: "Initial Decision",
-            description: "Your journey begins with an important medical decision.",
-            isCompleted: progress.completedScenarios["Initial Decision"]?.isCompleted ?? false,
-            position: CGPoint(x: 100, y: 200),
-            difficulty: "Easy",
-            icon: "play.fill",
-            isLocked: progress.completedScenarios["Initial Decision"]?.isLocked ?? false
-        )
-        
-        // Connect scenarios
-        initialDecision.connectTo(emergencyRoom)
-        emergencyRoom.connectTo(surgeryWard)
-        
-        return [initialDecision, emergencyRoom, surgeryWard]
-    }()
-    
+    @Environment(\.dismiss) var dismiss
+    @State private var scenarios: [Scenario]
     @State private var selectedScenario: Scenario?
     @State private var showingDetail = false
+    @State private var needsRefresh = false
     @State private var mapOffset = CGSize.zero  // For map panning
     @State private var mapScale: CGFloat = 1.0  // For map zooming
     @GestureState private var dragOffset = CGSize.zero
+    
+    init() {
+        _scenarios = State(initialValue: Self.createScenarios())
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -98,7 +67,8 @@ struct GameMapView: View {
                                         end: CGPoint(
                                             x: targetScenario.position.x + mapOffset.width + dragOffset.width,
                                             y: targetScenario.position.y + mapOffset.height + dragOffset.height
-                                        )
+                                        ),
+                                        isLocked: targetScenario.isLocked
                                     )
                                 }
                             }
@@ -112,8 +82,11 @@ struct GameMapView: View {
                                     y: scenario.position.y + mapOffset.height + dragOffset.height
                                 )
                                 .onTapGesture {
+                                    // Set selected scenario before showing detail
                                     selectedScenario = scenario
-                                    showingDetail = true
+                                    DispatchQueue.main.async {
+                                        showingDetail = true
+                                    }
                                 }
                         }
                     }
@@ -137,14 +110,86 @@ struct GameMapView: View {
                     )
                 )
             }
-            .sheet(isPresented: $showingDetail) {
-                if let scenario = selectedScenario {
-                    ScenarioDetailView(scenario: scenario)
-                }
+            .sheet(item: $selectedScenario) { scenario in  // Use sheet(item:) instead of isPresented
+                ScenarioDetailView(scenario: scenario)
             }
         }
         .navigationTitle("Game Map")
+        .toolbar {
+            #if os(iOS)
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Close") {
+                    dismiss()
+                }
+            }
+            #endif
+        }
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ProgressUpdated"))) { _ in
+            // Refresh scenarios when progress is updated
+            scenarios = Self.createScenarios()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScenarioUnlocked"))) { _ in
+            scenarios = Self.createScenarios()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScenarioCompleted"))) { _ in
+            scenarios = Self.createScenarios()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ForceGameMapRefresh"))) { _ in
+            // Force recreate scenarios and reset state
+            DispatchQueue.main.async {
+                self.scenarios = Self.createScenarios()
+                self.selectedScenario = nil  // Reset selected scenario
+                self.showingDetail = false   // Reset sheet state
+                self.needsRefresh.toggle()
+            }
+        }
+    }
+    
+    static func createScenarios() -> [Scenario] {
+        let progress = ProgressManager.shared.currentProgress
+        print("Creating scenarios with current progress:")
+        ProgressManager.shared.printCurrentProgress()
+        
+        // Create scenarios with current progress state
+        let initialDecision = Scenario(
+            title: "Initial Decision",
+            description: "A routine check-up becomes a life-changing moment. Face a decision that will test your values and reshape your family's future.",
+            isCompleted: progress.completedScenarios["Initial Decision"]?.isCompleted ?? false,
+            position: CGPoint(x: 100, y: 200),
+            difficulty: "Easy",
+            icon: "play.fill",
+            isLocked: false  // Always unlocked
+        )
+        
+        let emergencyRoom = Scenario(
+            title: "Emergency Room",
+            description: "A critical patient arrives from a car accident. Quick decisions are needed.",
+            isCompleted: progress.completedScenarios["Emergency Room"]?.isCompleted ?? false,
+            position: CGPoint(x: 300, y: 400),
+            difficulty: "Easy",
+            icon: "cross.circle.fill",
+            isLocked: progress.completedScenarios["Emergency Room"]?.isLocked ?? true
+        )
+        
+        let surgeryWard = Scenario(
+            title: "Surgery Ward",
+            description: "Complex surgery case requiring careful planning and execution.",
+            isCompleted: progress.completedScenarios["Surgery Ward"]?.isCompleted ?? false,
+            position: CGPoint(x: 250, y: 100),
+            difficulty: "Medium",
+            icon: "heart.circle.fill",
+            isLocked: progress.completedScenarios["Surgery Ward"]?.isLocked ?? true
+        )
+        
+        // Connect scenarios
+        initialDecision.connectTo(emergencyRoom)
+        initialDecision.connectTo(surgeryWard)
+        
+        // Force update the UI state
+        return [initialDecision, emergencyRoom, surgeryWard]
     }
     
     // Function to unlock a scenario
@@ -206,6 +251,7 @@ struct GameMapView_Previews: PreviewProvider {
 struct ConnectionLine: View {
     let start: CGPoint
     let end: CGPoint
+    let isLocked: Bool
     
     var body: some View {
         Path { path in
@@ -238,13 +284,19 @@ struct ScenarioDetailView: View {
                                 .fill(Color.blue.opacity(0.1))
                                 .frame(width: 100, height: 100)
                             
-                            Image(systemName: scenario.icon)
-                                .font(.system(size: 40))
-                                .foregroundColor(.blue)
+                            if scenario.isLocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.gray)
+                            } else {
+                                Image(systemName: scenario.icon)
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.blue)
+                            }
                         }
                         
                         // Title
-                        Text(scenario.title)
+                        Text(scenario.isLocked ? "???" : scenario.title)
                             .font(.title)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.center)
@@ -266,7 +318,7 @@ struct ScenarioDetailView: View {
                         Text("Scenario Description")
                             .font(.headline)
                         
-                        Text(scenario.description)
+                        Text(scenario.isLocked ? "???" : scenario.description)
                             .font(.body)
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -275,8 +327,8 @@ struct ScenarioDetailView: View {
                     
                     // Start Button
                     if !scenario.isLocked {
-                        Button {
-                            isShowingScenario = true
+                        NavigationLink {
+                            destinationForScenario(scenario)
                         } label: {
                             HStack {
                                 Image(systemName: "play.fill")
@@ -290,9 +342,6 @@ struct ScenarioDetailView: View {
                             .cornerRadius(15)
                         }
                         .padding(.horizontal)
-                        .navigationDestination(isPresented: $isShowingScenario) {
-                            destinationForScenario(scenario)
-                        }
                     } else {
                         // Locked message
                         HStack {
@@ -323,22 +372,34 @@ struct ScenarioDetailView: View {
     private func destinationForScenario(_ scenario: Scenario) -> some View {
         switch scenario.title {
         case "Initial Decision":
-            InitialDecision()
+            InitialDecision(onComplete: onScenarioComplete)
         case "Emergency Room":
-            EmergencyRoomScene()
+            EmergencyRoomScene(onComplete: onScenarioComplete)
+        case "Surgery Ward":
+            Text("Surgery Ward Scene - Coming Soon")
+                .font(.title)
+                .padding()
         default:
-            EmergencyRoomScene() // Default fallback
+            VStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.orange)
+                    .padding()
+                Text("Scene Not Found")
+                    .font(.title)
+                Text("The requested scenario could not be loaded.")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
         }
     }
     
-    private func difficultyColor(_ difficulty: String) -> Color {
-        switch difficulty {
-        case "Easy": return .green
-        case "Medium": return .orange
-        case "Hard": return .red
-        case "Final": return .purple
-        default: return .blue
-        }
+    private func onScenarioComplete() {
+        // Mark the scenario as completed
+        ProgressManager.shared.completeScenario(scenario.title)
+        
+        // Dismiss the view
+        dismiss()
     }
 }
 
@@ -348,6 +409,7 @@ struct ScenarioNode: View {
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
+                // Make background fully opaque
                 Circle()
                     .fill(nodeColor)
                     .frame(width: 70, height: 70)
@@ -369,8 +431,9 @@ struct ScenarioNode: View {
                         .frame(width: 70, height: 70)
                 }
             }
+            .background(Circle().fill(Color.white))
             
-            Text(scenario.title)
+            Text(scenario.isLocked ? "???" : scenario.title)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(scenario.isLocked ? .gray : .primary)
@@ -381,7 +444,7 @@ struct ScenarioNode: View {
     
     private var nodeColor: Color {
         if scenario.isLocked {
-            return .gray
+            return .gray  // Remove opacity to make it fully opaque
         }
         if scenario.isCompleted {
             return .green
