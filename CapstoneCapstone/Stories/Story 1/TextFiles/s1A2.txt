@@ -13,3 +13,10 @@ What would death mean, if a few cells are kept alive?
 DECISION:
 A. Agree to stem cell extraction
 B. Refuses stem cell extraction
+
+
+[Option A.]
+s1A2a.txt
+
+[Option B]
+s1A2b.txt

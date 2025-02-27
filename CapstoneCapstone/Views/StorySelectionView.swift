@@ -11,21 +11,21 @@ struct Story: Identifiable {
     
     static let allStories = [
         Story(
-            title: "Story 1: Medical Ethics",
-            subtitle: "The Path You Choose",
-            description: "Begin your journey as a medical student facing critical ethical decisions that will shape your future career.",
+            title: "The Gift of Life",
+            subtitle: "A Journey of Sacrifice and Family",
+            description: "Experience the emotional journey of a cancer survivor faced with a profound ethical dilemma: donate a kidney to save a stranger or prioritize your remaining years with family. Your choices will reveal the complex balance between altruism and self-preservation, exploring what it truly means to give the gift of life.",
             isLocked: false,
-            systemImage: "cross.case.fill",
+            systemImage: "heart.fill",
             destination: AnyView(GameMapView())
         ),
         Story(
             title: "Story 2: Coming Soon",
             subtitle: "Locked",
-            description: "Complete Story 1 to unlock this new adventure. More challenges await!",
+            description: "Complete 'The Gift of Life' to unlock this new adventure. More challenges await!",
             isLocked: true,
             systemImage: "lock.fill",
             destination: AnyView(Text("Coming Soon!"))
-        )
+        ),
     ]
 }
 
@@ -42,9 +42,11 @@ struct StorySelectionView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Select Story")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Select Story")
+                        .font(.headline)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") {
                         dismiss()

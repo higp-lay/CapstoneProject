@@ -26,18 +26,18 @@ struct Achievement: Codable, Identifiable {
             isUnlocked: false
         ),
         Achievement(
-            id: "emergency_complete",
-            title: "Emergency Responder",
-            description: "Successfully complete the Emergency Room scenario.",
-            icon: "cross.circle.fill",
+            id: "reached_terminal_node",
+            title: "Path Completed",
+            description: "Reach any terminal node in the storyline.",
+            icon: "flag.checkered",
             dateUnlocked: nil,
             isUnlocked: false
         ),
         Achievement(
-            id: "perfect_choice",
-            title: "Perfect Decision",
-            description: "Make the optimal choice in any scenario.",
-            icon: "checkmark.circle.fill",
+            id: "story_completed",
+            title: "Full Circle",
+            description: "Complete an entire story from beginning to end.",
+            icon: "book.closed.fill",
             dateUnlocked: nil,
             isUnlocked: false
         )
@@ -51,6 +51,24 @@ class AchievementManager {
     
     // Add this property to track if we're showing an achievement
     private var isShowingAchievement = false
+    
+    init() {
+        // Set up notification observers
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleStoryCompleted),
+            name: NSNotification.Name("StoryCompleted"),
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleStoryCompleted() {
+        checkStoryCompletion()
+    }
     
     var achievements: [Achievement] {
         get {
@@ -104,6 +122,16 @@ class AchievementManager {
             unlockAchievement(id: "first_login")
             UserDefaults.standard.set(true, forKey: firstLoginKey)
         }
+    }
+    
+    // New method to check for terminal node completion
+    func checkTerminalNodeCompletion() {
+        unlockAchievement(id: "reached_terminal_node")
+    }
+    
+    // New method to check for story completion
+    func checkStoryCompletion() {
+        unlockAchievement(id: "story_completed")
     }
     
     func resetAchievements() {

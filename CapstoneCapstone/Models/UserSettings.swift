@@ -4,11 +4,13 @@ struct UserSettings: Codable {
     var playerName: String
     var soundEnabled: Bool
     var hapticEnabled: Bool
+    var ttsEnabled: Bool
     
     static let defaultSettings = UserSettings(
         playerName: "",
         soundEnabled: true,
-        hapticEnabled: true
+        hapticEnabled: true,
+        ttsEnabled: false
     )
 }
 

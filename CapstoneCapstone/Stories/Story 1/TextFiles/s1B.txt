@@ -21,3 +21,10 @@ A. Continues the standard therapy
 B. Turns to palliative care
 
 
+[Option A.]
+s1B1.txt
+
+[Option B]
+s1B2.txt
+
+

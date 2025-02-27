@@ -34,10 +34,7 @@ B. DONATE THE MONEY TO A CHARITY CANCER FUND
 
 
 [Option A.]
-1A1a.txt
-
-
-
+s1A1a.txt
 
 [Option B]
-1A1b.txt
+s1A1b.txt

@@ -26,3 +26,10 @@ I wondered what would happen if I were cryopreserved. Then, somehow, I thought o
 DECISION:
 A. Agrees to cryonics
 B. Declines cryonics
+
+
+[Option A.]
+s1B1a.txt
+
+[Option B]
+s1B1b.txt

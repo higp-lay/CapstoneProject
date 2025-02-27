@@ -18,11 +18,6 @@ struct ContentView: View {
     // Add this to track first launch
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
     
-    init() {
-        // Load custom font if needed
-        // This is optional if you've properly added the font to your project
-    }
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -127,7 +122,7 @@ struct ContentView: View {
                                 .foregroundColor(.gray)
                         }
                         Spacer()
-                        Text("v 0.2")
+                        Text("v 1.0.1")
                             .font(.footnote)
                             .foregroundColor(.gray)
                             .padding(.horizontal, 10)

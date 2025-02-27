@@ -7,7 +7,8 @@ struct AchievementPopupView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                Spacer()
+                Spacer() // Push content to the bottom
+                
                 HStack(spacing: 15) {
                     // Achievement Icon
                     ZStack {
@@ -56,9 +57,9 @@ struct AchievementPopupView: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 10)
                 )
                 .padding(.horizontal)
-                .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
+                .padding(.bottom, geometry.safeAreaInsets.bottom + 10) // Add bottom padding instead of top
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .transition(.move(edge: .bottom).combined(with: .opacity)) // Change transition to bottom
         }
         .ignoresSafeArea()
         .background(Color.black.opacity(0.001)) // Allows taps to dismiss

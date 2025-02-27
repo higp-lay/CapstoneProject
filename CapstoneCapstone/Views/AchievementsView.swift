@@ -14,11 +14,12 @@ struct AchievementsView: View {
                         AchievementCard(achievement: achievement)
                     }
                 }
-                .padding()
             }
-            .navigationTitle("Achievements")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Achievements")
+                        .font(.headline)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") {
                         dismiss()

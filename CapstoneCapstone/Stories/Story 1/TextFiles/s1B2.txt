@@ -14,3 +14,10 @@ As I lay there, pondering the road before me, I slowly accepted that euthanasia 
 DECISION:
 A. Agrees to euthanasia
 B. Refuses euthanasia
+
+
+Option A.]
+s1B2a.txt
+
+[Option B]
+s1B2b.txt
