@@ -68,6 +68,7 @@ struct s1A2b: View {
             // We don't need this navigationDestination for terminal nodes
             // since we never want to navigate further
         }
+        .withTerminalNodeConfetti()
         .onAppear {
             // Complete this scenario when it appears
             ProgressManager.shared.completeScenario("s1A2b")

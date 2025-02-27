@@ -61,22 +61,50 @@ struct SettingsView: View {
                         }
                     }
                     
-                Toggle(isOn: $ttsEnabled) {
-                    HStack {
-                        Image(systemName: "text.bubble.fill")
-                            .foregroundColor(.blue)
-                        Text("Text-to-Speech")
-                        Text("BETA")
-                            .font(.system(size: 10, weight: .bold))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.2))
-                            .foregroundColor(.blue)
-                            .cornerRadius(4)
+                HStack {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .foregroundColor(.gray)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Text-to-Speech")
+                                .foregroundColor(.gray)
+                            Text("Under Development")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(Color.gray.opacity(0.2))
+                                .foregroundColor(.gray)
+                                .cornerRadius(4)
+                        }
+                        Text("This feature will be available in a future update")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
+                    Spacer()
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.gray)
+                        .font(.caption)
                 }
-                .onChange(of: ttsEnabled) { newValue in
-                    UserSettingsManager.shared.currentSettings.ttsEnabled = newValue
+                .padding(.vertical, 8)
+                
+                HStack {
+                    Button(role: .destructive) {
+                        showingResetAlert = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Reset Story Progress")
+                        }
+                    }
+                    // Achievement Reset alert
+                    .alert("Reset Achievements?", isPresented: $showingResetAchievementConfirmation) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Reset", role: .destructive) {
+                            resetAchievements()
+                        }
+                    } message: {
+                        Text("This will reset all achievements to their initial state. This action cannot be undone.")
+                    }
                 }
             }
             
@@ -85,7 +113,7 @@ struct SettingsView: View {
                     Text("Life Lines")
                         .font(.headline)
                     
-                    Text("Version 1.0.1")
+                    Text("Version 1.0.2")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
@@ -240,15 +268,6 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("Are you absolutely sure? This action cannot be undone.")
-            }
-            // Achievement Reset alert
-            .alert("Reset Achievements?", isPresented: $showingResetAchievementConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Reset", role: .destructive) {
-                    resetAchievements()
-                }
-            } message: {
-                Text("This will reset all achievements to their initial state. This action cannot be undone.")
             }
             // Game Data Reset alert
             .alert("Reset All Game Data?", isPresented: $showingResetGameDataConfirmation) {
@@ -422,4 +441,4 @@ extension Data {
 
 #Preview {
     SettingsView()
-} 
+}

@@ -100,6 +100,7 @@ struct StoryView: View {
     @State private var dialoguesLoaded = false
     @ObservedObject private var transitionManager = TransitionManager.shared
     @ObservedObject private var achievementNotificationManager = AchievementNotificationManager.shared
+    @ObservedObject private var confettiManager = ConfettiManager.shared
     @State private var hasDismissed = false
     
     // Add TTS instance
@@ -184,6 +185,13 @@ struct StoryView: View {
                     choicesSection(geometry)
                 }
                 .opacity(isExiting ? 0 : 1) // Fade out when exiting
+                
+                // Add confetti overlay using the manager
+                if confettiManager.showConfetti {
+                    ConfettiView()
+                        .allowsHitTesting(false) // Prevent confetti from blocking interactions
+                        .zIndex(100) // Ensure confetti appears on top
+                }
             }
         }
         .navigationTitle("")
@@ -371,6 +379,40 @@ struct StoryView: View {
             }
             .padding(.horizontal, geometry.size.width * 0.05)
             Spacer()
+            
+            // Add Previous button at the bottom of choices section
+            if !showingConfirmation && currentDialogue > 0 {
+                Button(action: {
+                    // Stop TTS if enabled
+                    if isTTSEnabled {
+                        tts.stopSpeech()
+                    }
+                    
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showChoices = false
+                        currentDialogue -= 1
+                        // Speak the previous dialogue after a short delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            speakCurrentDialogue()
+                        }
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: geometry.size.width * 0.04))
+                        Text("Previous")
+                            .font(.system(size: geometry.size.width * 0.04))
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.blue)
+                            .shadow(color: Color.black.opacity(0.2), radius: 5)
+                    )
+                }
+                .padding(.bottom, geometry.size.height * 0.03)
+            }
         }
     }
     
@@ -381,38 +423,95 @@ struct StoryView: View {
             // Check if this is an end node (no choices available) and we're at the last dialogue
             if choices.isEmpty && currentDialogue >= dialogues.count - 1 {
                 // For end nodes at the last dialogue, show a fancy Exit button
-                Button("Complete Story") {
-                    // Stop TTS if enabled
-                    if isTTSEnabled {
-                        tts.stopSpeech()
-                    }
-                    exitStory()
-                }
-                .buttonStyle(FancyButtonStyle(size: geometry.size, color: .purple))
-                .padding(.bottom, geometry.size.height * 0.05)
-                .padding(.horizontal, geometry.size.width * 0.1) // Make button wider
-                .transition(.opacity)
-            } else {
-                // For all other cases, show the regular Continue button
-                Button("Continue") {
+                Button {
                     // Stop TTS if enabled
                     if isTTSEnabled {
                         tts.stopSpeech()
                     }
                     
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentDialogue += 1
-                        if currentDialogue >= dialogues.count {
-                            showChoices = true
-                        } else {
-                            // Speak the next dialogue after a short delay to allow animation to complete
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                speakCurrentDialogue()
+                    // Get the button's center position in the screen coordinates
+                    let buttonWidth = geometry.size.width * 0.8 // 80% of screen width
+                    let buttonHeight = geometry.size.height * 0.1 // 10% of screen height
+                    let buttonX = geometry.size.width / 2 // Center of screen
+                    let buttonY = geometry.size.height * 0.9 // 90% down the screen
+                    
+                    // Trigger confetti from the button's position
+                    confettiManager.triggerConfetti(from: CGPoint(x: buttonX, y: buttonY))
+                    
+                    // Exit after a short delay to allow confetti to be visible
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        exitStory()
+                    }
+                } label: {
+                    Text("Complete Story")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.purple)
+                                .shadow(color: Color.black.opacity(0.2), radius: 5)
+                        )
+                }
+                .padding(.bottom, geometry.size.height * 0.05)
+                .padding(.horizontal, geometry.size.width * 0.1) // Make button wider
+                .transition(.opacity)
+            } else {
+                // Navigation buttons for regular dialogue
+                HStack(spacing: geometry.size.width * 0.05) {
+                    // Previous button - only show if not on first page
+                    if currentDialogue > 0 {
+                        Button(action: {
+                            // Stop TTS if enabled
+                            if isTTSEnabled {
+                                tts.stopSpeech()
                             }
+                            
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                if currentDialogue > 0 {
+                                    currentDialogue -= 1
+                                    // Speak the previous dialogue after a short delay
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        speakCurrentDialogue()
+                                    }
+                                }
+                            }
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: geometry.size.width * 0.05))
+                                .foregroundColor(.white)
+                                .frame(width: geometry.size.width * 0.1, height: geometry.size.width * 0.1)
+                                .background(Circle().fill(Color.blue))
                         }
                     }
+                    
+                    // Next button
+                    Button(action: {
+                        // Stop TTS if enabled
+                        if isTTSEnabled {
+                            tts.stopSpeech()
+                        }
+                        
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentDialogue += 1
+                            if currentDialogue >= dialogues.count {
+                                showChoices = true
+                            } else {
+                                // Speak the next dialogue after a short delay
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    speakCurrentDialogue()
+                                }
+                            }
+                        }
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: geometry.size.width * 0.05))
+                            .foregroundColor(.white)
+                            .frame(width: geometry.size.width * 0.1, height: geometry.size.width * 0.1)
+                            .background(Circle().fill(Color.blue))
+                    }
                 }
-                .buttonStyle(CustomButtonStyle(size: geometry.size))
                 .padding(.bottom, geometry.size.height * 0.05)
             }
         }

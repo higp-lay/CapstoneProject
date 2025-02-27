@@ -13,7 +13,7 @@ struct Story: Identifiable {
         Story(
             title: "The Gift of Life",
             subtitle: "A Journey of Sacrifice and Family",
-            description: "Experience the emotional journey of a cancer survivor faced with a profound ethical dilemma: donate a kidney to save a stranger or prioritize your remaining years with family. Your choices will reveal the complex balance between altruism and self-preservation, exploring what it truly means to give the gift of life.",
+            description: "Explore the theme of Living and Dying through the lens of a cancer patient. A probe into what is the cost of survival, why we live, and ultimately, what matters most in life.",
             isLocked: false,
             systemImage: "heart.fill",
             destination: AnyView(GameMapView())

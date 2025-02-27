@@ -636,17 +636,18 @@ struct ConnectionLine: View {
     let start: CGPoint
     let end: CGPoint
     let isCompleted: Bool
+    let isTargetLocked: Bool
     
     var body: some View {
         Path { path in
             path.move(to: start)
             path.addLine(to: end)
         }
-        .stroke(isCompleted ? Color.blue : Color.gray.opacity(0.7), style: StrokeStyle(
+        .stroke(isCompleted && !isTargetLocked ? Color.blue : Color.gray.opacity(0.7), style: StrokeStyle(
             lineWidth: 3, // Increased line width
             lineCap: .round,
             lineJoin: .round,
-            dash: isCompleted ? [] : [5, 5] // Add dashed style for incomplete connections
+            dash: isCompleted && !isTargetLocked ? [] : [5, 5] // Always use dashed style for locked targets
         ))
     }
 }
@@ -731,7 +732,7 @@ struct ScenarioDetailView: View {
                         // Locked message
                         HStack {
                             Image(systemName: "lock.fill")
-                            Text("Complete previous scenarios to unlock")
+                            Text("Return to the previous scenario to unlock")
                         }
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -1041,7 +1042,8 @@ struct ConnectionLineView: View {
                 ConnectionLine(
                     start: scenario.position,
                     end: targetScenario.position,
-                    isCompleted: scenario.isCompleted
+                    isCompleted: scenario.isCompleted,
+                    isTargetLocked: targetScenario.isLocked
                 )
             }
         }

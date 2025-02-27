@@ -140,7 +140,7 @@ struct s1A1: View {
                     if let complete = onComplete {
                         complete()
                     }
-                    dismiss()
+                            dismiss()
                 }
             )
             .navigationDestination(isPresented: $navigateToNext) {
