@@ -25,6 +25,9 @@ class SceneManager: ObservableObject {
         let sceneView: AnyView
         print("SCENENAME: \(sceneName)")
         switch sceneName {
+            case "s1S":
+                sceneView = AnyView(s1S(onComplete: onComplete)
+                    .withSmoothTransition())
             case "s1":
                 sceneView = AnyView(s1(onComplete: onComplete)
                     .withSmoothTransition())

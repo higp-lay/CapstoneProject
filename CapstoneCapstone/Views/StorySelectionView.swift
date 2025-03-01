@@ -112,7 +112,7 @@ struct StoryCard: View {
         .alert("Story Locked", isPresented: $showingLockAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Complete Story 1 to unlock this story.")
+            Text("Complete \"The Gift of Life\" to unlock this story.")
         }
     }
 }

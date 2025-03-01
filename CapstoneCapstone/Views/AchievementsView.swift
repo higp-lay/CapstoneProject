@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+// Import the Achievement model
 
 @available(iOS 13.0, macOS 12.0, *)
 struct AchievementsView: View {
@@ -14,6 +15,7 @@ struct AchievementsView: View {
                         AchievementCard(achievement: achievement)
                     }
                 }
+                .padding()
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -46,26 +48,39 @@ struct AchievementCard: View {
                     .font(.system(size: 30))
                     .foregroundColor(achievement.isUnlocked ? .blue : .gray)
             }
+            .padding(.top, 8)
             
             // Title
             Text(achievement.title)
                 .font(.headline)
                 .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .frame(height: 20)
             
             // Description
             Text(achievement.description)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .frame(height: 50)
             
             // Unlock Date
             if let date = achievement.dateUnlocked {
                 Text(date.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption2)
                     .foregroundColor(.blue)
+                    .frame(height: 15)
+            } else {
+                // Placeholder to maintain consistent height
+                Text(" ")
+                    .font(.caption2)
+                    .foregroundColor(.clear)
+                    .frame(height: 15)
             }
         }
         .padding()
+        .frame(height: 220) // Fixed height for all cards
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 15)

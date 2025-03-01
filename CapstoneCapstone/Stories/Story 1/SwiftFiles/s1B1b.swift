@@ -12,27 +12,22 @@ struct s1B1b: View {
         [
             DialogueItem(
                 text: "My life can only be described as a miracle, and I am profoundly grateful for it. After so many rounds of chemotherapy, I knew I could have died at any moment; my will to survive could have crumbled under the weight of pain in any second.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "Yet, I am continually impressed by how that willpower triumphed over the suffering I endured—for myself and for my family. Because I survived, I was blessed with another decade or two to share with them. We created beautiful memories together, and I can confidently say it was worth every tear I shed.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "Eventually, I did not choose cryonics. Life is already filled with uncertainties; I had fought through countless moments without knowing if my efforts were in vain or what the best course of action was. The thought of my loved ones grappling with the ambiguity of my death—wondering if I might return—is unsettling.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "It creates a strange conflict: should they mourn me, or hold on to the hope that I am still alive? This turmoil would linger as long as I remained suspended at -196 degrees Celsius.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "I would rather they accept my death and celebrate the life we shared, cherishing the moments we had together. That, to me, is my death wish.",
-                systemImage: "person.fill",
                 speaker: "You"
             )
         ]
@@ -41,7 +36,7 @@ struct s1B1b: View {
     var body: some View {
         NavigationStack {
             StoryView(
-                title: "Natural Closure",
+                title: "Nature Dictates",
                 dialogues: Self.initialDialogues,
                 choices: [],
                 onComplete: onComplete,

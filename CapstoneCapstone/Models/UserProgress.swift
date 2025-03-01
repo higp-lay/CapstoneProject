@@ -10,9 +10,14 @@ struct UserProgress: Codable {
     }
     
     static let defaultProgress: [String: ScenarioProgress] = [
+        "s1S": ScenarioProgress(
+            isCompleted: false,
+            isLocked: false,
+            dateCompleted: nil
+        ),
         "s1": ScenarioProgress(
             isCompleted: false,
-            isLocked: false,  // s1 starts unlocked
+            isLocked: true,
             dateCompleted: nil
         ),
         "s1A": ScenarioProgress(
@@ -94,7 +99,7 @@ class ProgressManager {
     
     private init() {
         // First migrate any old keys to the new format
-        migrateOldKeysToNewFormat()
+//        migrateOldKeysToNewFormat()
         
         // Then ensure all scenarios are registered
         DispatchQueue.main.async {
@@ -185,12 +190,6 @@ class ProgressManager {
             
 //            print("Successfully completed scenario: \(title)")
 //            printCurrentProgress()  // Debug print current state
-            
-            // Check if this is a terminal node (ends with a letter)
-            if title.count >= 5 && title.last?.isLetter == true {
-                // Check if the entire story is completed
-                checkStoryCompletion(for: String(title.prefix(2)))
-            }
         } else {
             print("ERROR: Could not complete scenario \(title) - key not found in completedScenarios dictionary")
             print("Adding this scenario to the dictionary and marking it as completed...")
@@ -211,12 +210,6 @@ class ProgressManager {
             
             print("Successfully added and completed scenario: \(title)")
             printCurrentProgress()  // Debug print current state
-            
-            // Check if this is a terminal node (ends with a letter)
-            if title.count >= 5 && title.last?.isLetter == true {
-                // Check if the entire story is completed
-                checkStoryCompletion(for: String(title.prefix(2)))
-            }
         }
         
         // Print keys after completion
@@ -281,7 +274,7 @@ class ProgressManager {
         
         // List of all scenario code names
         let allScenarioCodes = [
-            "s1", "s1A", "s1B", 
+            "s1S", "s1", "s1A", "s1B",
             "s1A1", "s1A2", "s1B1", "s1B2",
             "s1A1a", "s1A1b", "s1A2a", "s1A2b", 
             "s1B1a", "s1B1b", "s1B2a", "s1B2b"
@@ -293,7 +286,7 @@ class ProgressManager {
                 print("Adding missing scenario: \(code)")
                 
                 // Default to locked except for s1
-                let isLocked = (code != "s1")
+                let isLocked = (code != "s1S")
                 
                 progress.completedScenarios[code] = UserProgress.ScenarioProgress(
                     isCompleted: false,
@@ -316,74 +309,6 @@ class ProgressManager {
         
         // Print keys after ensuring all scenarios are registered
         print("Keys after ensuring all scenarios are registered:")
-        printAllKeys()
-    }
-    
-    // Function to migrate old keys to new format
-    private func migrateOldKeysToNewFormat() {
-        print("Checking for old scenario keys to migrate...")
-        printAllKeys()
-        
-        var progress = currentProgress
-        var madeChanges = false
-        
-        // Map of old keys to new keys
-        let keyMappings = [
-            "Emergency Room": "s1",
-            "InitialDecision": "s1",
-            "Surgery Ward": "s1A",
-            "Initial Decision": "s1"
-            // Add more mappings as needed
-        ]
-        
-        // Check for old keys and migrate them
-        for (oldKey, newKey) in keyMappings {
-            if let oldProgress = progress.completedScenarios[oldKey] {
-                print("Found old key: \(oldKey), migrating to: \(newKey)")
-                
-                // Only migrate if the new key doesn't already exist
-                if progress.completedScenarios[newKey] == nil {
-                    progress.completedScenarios[newKey] = oldProgress
-                    madeChanges = true
-                } else {
-                    print("New key \(newKey) already exists, merging progress...")
-                    
-                    // If both keys exist, take the most advanced state
-                    var newProgress = progress.completedScenarios[newKey]!
-                    
-                    // If old progress is completed but new isn't, mark as completed
-                    if oldProgress.isCompleted && !newProgress.isCompleted {
-                        newProgress.isCompleted = true
-                        newProgress.dateCompleted = oldProgress.dateCompleted
-                        madeChanges = true
-                    }
-                    
-                    // If old progress is unlocked but new isn't, unlock it
-                    if !oldProgress.isLocked && newProgress.isLocked {
-                        newProgress.isLocked = false
-                        madeChanges = true
-                    }
-                    
-                    progress.completedScenarios[newKey] = newProgress
-                }
-                
-                // Remove the old key
-                progress.completedScenarios.removeValue(forKey: oldKey)
-                madeChanges = true
-            }
-        }
-        
-        // Save changes if needed
-        if madeChanges {
-            currentProgress = progress
-            print("Migrated old keys to new format")
-            printCurrentProgress()
-        } else {
-            print("No old keys found to migrate")
-        }
-        
-        // Print keys after migration
-        print("Keys after migration:")
         printAllKeys()
     }
     

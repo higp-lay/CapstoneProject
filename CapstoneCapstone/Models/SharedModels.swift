@@ -3,14 +3,12 @@ import SwiftUI
 struct DialogueItem {
     let id = UUID()
     let text: String
-    let systemImage: String
     let speaker: String
 }
 
 struct Choice: Identifiable {
     let id = UUID()
     let text: String
-    let consequence: String
     let systemImage: String
     let unlocksScenario: String?
 }

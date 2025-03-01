@@ -15,27 +15,22 @@ struct s1A1a: View {
         [
             DialogueItem(
                 text: "My life is peaceful and enjoyable now. I can afford to visit my children often and don't need to work as hard. We indulge in good food, go on holidays together, and cherish what may be my last few years as a family.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "I know my time is limited. I can feel it in every footstep I take. But I no longer fear death. I've faced it, been closer to it than I am right now, and I choose to savor every moment with my loved ones.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "Thoughts sometimes drift through my mind. I think about Flynn and wonder if he will manage to survive another 20 years, maybe even 30. I keep him in my thoughts, hoping for the best. ",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "Occasionally, I thought about the kids with cancer who I could have donated to help. Their bright futures and innocent faces remind me of my own children, and I can't help but tear up a little. It's a complex feeling, balancing my own happiness with the desire to help others. But I keep them in my thoughts too.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "But if nothing goes wrong, I should be able to live happily for a few more years. And who knows? By then, Mark might be married, and Christina might have a child. More importantly, I hope I will be there.",
-                systemImage: "person.fill",
                 speaker: "You"
             )
         ]
@@ -44,7 +39,7 @@ struct s1A1a: View {
     var body: some View {
         NavigationStack {
             StoryView(
-                title: "Family First",
+                title: "Joy",
                 dialogues: Self.initialDialogues,
                 choices: [],
                 onComplete: onComplete,

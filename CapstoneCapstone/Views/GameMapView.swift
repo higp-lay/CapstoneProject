@@ -36,20 +36,18 @@ class Scenario: Identifiable {
     let description: String
     var isCompleted: Bool
     var position: CGPoint
-    let difficulty: String
     let icon: String
     var isLocked: Bool
     var connections: [UUID]
     var parentId: UUID?  // Add parent ID tracking
     var isHidden: Bool = true  // Add isHidden property
     
-    init(codeName: String, title: String, description: String, isCompleted: Bool, position: CGPoint, difficulty: String, icon: String, isLocked: Bool) {
+    init(codeName: String, title: String, description: String, isCompleted: Bool, position: CGPoint, icon: String, isLocked: Bool) {
         self.codeName = codeName
         self.title = title
         self.description = description
         self.isCompleted = isCompleted
         self.position = position
-        self.difficulty = difficulty
         self.icon = icon
         self.isLocked = isLocked
         self.connections = []
@@ -65,8 +63,8 @@ class Scenario: Identifiable {
     
     // Helper method to update visibility based on parent's locked status
     func updateVisibility(scenarios: [Scenario]) {
-        // Root node (s1) is always visible
-        if codeName == "s1" {
+        // Root node (s1S) is always visible
+        if codeName == "s1S" {
             self.isHidden = false
 //            print("Root node \(codeName) is always visible")
             return
@@ -350,25 +348,33 @@ struct GameMapView: View {
         let centerY = mapHeight / 2
         
         // Create scenarios with current progress state
+        let s1S = Scenario(
+            codeName: "s1S",
+            title: "Why We Live",
+            description: "Before we begin, let's talk about life.",
+            isCompleted: progress.completedScenarios["s1S"]?.isCompleted ?? false,
+            position: CGPoint(x: centerX, y: centerY - 160),
+            icon: "play.fill",
+            isLocked: false
+        )
+        
         let s1 = Scenario(
             codeName: "s1",
             title: "The Cost of Survival",
             description: "A routine check-up becomes a life-changing moment. Face a decision that will test your values and reshape your family's future.",
             isCompleted: progress.completedScenarios["s1"]?.isCompleted ?? false,
             position: CGPoint(x: centerX, y: centerY), // Center of map, shifted right
-            difficulty: "Easy",
-            icon: "play.fill",
-            isLocked: false
+            icon: "bolt.heart.fill",
+            isLocked: progress.completedScenarios["s1"]?.isLocked ?? true
         )
         
         // Position other nodes relative to center with improved spacing
         let s1A = Scenario(
             codeName: "s1A",
             title: "The Risk We Take",
-            description: "Face the consequences of your expensive treatment decision. Your family struggles with the financial burden while you battle the physical toll of medication.",
+            description: "Face the aftermath of your expensive treatment. Confront decisions that involve risks to, not just yourself, but others. What makes a risk worth taking?",
             isCompleted: progress.completedScenarios["s1A"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 180, y: centerY - 120), // Adjusted position
-            difficulty: "Easy",
             icon: "pills.circle.fill",
             isLocked: progress.completedScenarios["s1A"]?.isLocked ?? true
         )
@@ -376,21 +382,19 @@ struct GameMapView: View {
         let s1B = Scenario(
             codeName: "s1B",
             title: "The Reason Why",
-            description: "Confront a difficult medical reality as your chemotherapy proves ineffective. Choose between continuing standard therapy or focusing on palliative care.",
+            description: "Confront a difficult reality as treatment turns out to be ineffective. Does prolonging life matter more than quality of life in the current moment?",
             isCompleted: progress.completedScenarios["s1B"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 180, y: centerY - 120), // Adjusted position
-            difficulty: "Medium",
             icon: "waveform.path.ecg",
             isLocked: progress.completedScenarios["s1B"]?.isLocked ?? true
         )
         
         let s1A1 = Scenario(
             codeName: "s1A1",
-            title: "A New Connection",
-            description: "Meet Flynn, the recipient of your kidney donation. An unexpected financial opportunity presents itself, forcing you to make a choice about your priorities.",
+            title: "Self and Strangers",
+            description: "You have experienced a lot of hardship in the past. A reward has come. Is it a time to help strangers, or a time to bring solace to the family?",
             isCompleted: progress.completedScenarios["s1A1"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 280, y: centerY - 200), // Adjusted position
-            difficulty: "Medium",
             icon: "person.2.fill",
             isLocked: progress.completedScenarios["s1A1"]?.isLocked ?? true
         )
@@ -398,10 +402,9 @@ struct GameMapView: View {
         let s1A2 = Scenario(
             codeName: "s1A2",
             title: "Identity",
-            description: "After deciding against kidney donation, you contemplate your legacy. An opportunity to have your stem cells extracted for future research presents itself.",
+            description: "Meet an unexpected opportunity that can be life-changing. What constitutes our identity? How important is our uniqueness?",
             isCompleted: progress.completedScenarios["s1A2"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 240, y: centerY + 20), // Adjusted position
-            difficulty: "Medium",
             icon: "person.crop.circle.badge.questionmark",
             isLocked: progress.completedScenarios["s1A2"]?.isLocked ?? true
         )
@@ -409,10 +412,9 @@ struct GameMapView: View {
         let s1B1 = Scenario(
             codeName: "s1B1",
             title: "Eternity",
-            description: "Continue your fight against cancer through more rounds of chemotherapy. The treatment is brutal, but you're determined to survive for your family.",
+            description: "Continue your fight against cancer through more rounds of chemotherapy. How much longer do you want to live?",
             isCompleted: progress.completedScenarios["s1B1"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 280, y: centerY - 200), // Adjusted position
-            difficulty: "Medium",
             icon: "hourglass",
             isLocked: progress.completedScenarios["s1B1"]?.isLocked ?? true
         )
@@ -420,76 +422,69 @@ struct GameMapView: View {
         let s1B2 = Scenario(
             codeName: "s1B2",
             title: "Dignity",
-            description: "Choose palliative care to focus on quality of life rather than aggressive treatment. Find joy in simple pleasures and time with family.",
+            description: "You explored the Cost of Survival. What about the Value of Survival? What makes surviving meaningful?.",
             isCompleted: progress.completedScenarios["s1B2"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 240, y: centerY + 20), // Adjusted position
-            difficulty: "Medium",
             icon: "sun.max.fill",
             isLocked: progress.completedScenarios["s1B2"]?.isLocked ?? true
         )
         
         let s1A1a = Scenario(
             codeName: "s1A1a",
-            title: "Family First",
+            title: "Joy",
             description: "Spend the money on your family, ensuring quality time together in your remaining years. Find peace in simple moments with loved ones.",
             isCompleted: progress.completedScenarios["s1A1a"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 380, y: centerY - 240), // Adjusted position
-            difficulty: "Medium",
             icon: "house.fill",
             isLocked: progress.completedScenarios["s1A1a"]?.isLocked ?? true
         )
         
         let s1A1b = Scenario(
             codeName: "s1A1b",
-            title: "Greater Good",
+            title: "Compassion",
             description: "Donate your fortune to a cancer fund, hoping to help others facing the same struggles you endured. Your sacrifice may save a child's life.",
             isCompleted: progress.completedScenarios["s1A1b"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 340, y: centerY - 100), // Adjusted position
-            difficulty: "Medium",
             icon: "hand.raised.fill",
             isLocked: progress.completedScenarios["s1A1b"]?.isLocked ?? true
         )
         
         let s1A2a = Scenario(
             codeName: "s1A2a",
-            title: "Legacy",
+            title: "Embracing Uncertainties",
             description: "Agree to have your stem cells extracted for future research, contemplating what it means to leave a part of yourself behind after death.",
             isCompleted: progress.completedScenarios["s1A2a"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 300, y: centerY + 140), // Adjusted position
-            difficulty: "Medium",
             icon: "leaf.fill",
             isLocked: progress.completedScenarios["s1A2a"]?.isLocked ?? true
         )
         
         let s1A2b = Scenario(
             codeName: "s1A2b",
-            title: "Acceptance",
+            title: "Peace In Endings",
             description: "Decline the stem cell extraction, finding peace in the natural end of your life. You've lived once and that was enough.",
             isCompleted: progress.completedScenarios["s1A2b"]?.isCompleted ?? false,
             position: CGPoint(x: centerX - 180, y: centerY + 200), // Adjusted position
-            difficulty: "Medium",
             icon: "peacesign",
             isLocked: progress.completedScenarios["s1A2b"]?.isLocked ?? true
         )
         
         let s1B1a = Scenario(
             codeName: "s1B1a",
-            title: "Second Chance",
+            title: "It Never Ends",
             description: "Choose cryonics to preserve your body after death, hoping for a second life in the future. You believe life is worth celebrating with another chance.",
             isCompleted: progress.completedScenarios["s1B1a"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 380, y: centerY - 240), // Adjusted position
-            difficulty: "Medium",
             icon: "snowflake",
             isLocked: progress.completedScenarios["s1B1a"]?.isLocked ?? true
         )
         
         let s1B1b = Scenario(
             codeName: "s1B1b",
-            title: "Natural Closure",
+            title: "Nature Dictates",
             description: "Decline cryonics, preferring your loved ones to have closure rather than lingering hope. You want them to celebrate the life you shared together.",
             isCompleted: progress.completedScenarios["s1B1b"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 340, y: centerY - 100), // Adjusted position
-            difficulty: "Medium",
             icon: "moon.stars.fill",
             isLocked: progress.completedScenarios["s1B1b"]?.isLocked ?? true
         )
@@ -500,23 +495,23 @@ struct GameMapView: View {
             description: "Find dignity in accepting the end of your life on your own terms. You choose to leave your family financially stable rather than prolonging your suffering.",
             isCompleted: progress.completedScenarios["s1B2a"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 300, y: centerY + 140), // Adjusted position
-            difficulty: "Medium",
             icon: "mountain.2.fill",
             isLocked: progress.completedScenarios["s1B2a"]?.isLocked ?? true
         )
         
         let s1B2b = Scenario(
             codeName: "s1B2b",
-            title: "Passing the Light",
+            title: "Passing on the Light",
             description: "Reflect on your life's journey and the choices you've made. Find peace in knowing your children will have financial stability after you're gone.",
             isCompleted: progress.completedScenarios["s1B2b"]?.isCompleted ?? false,
             position: CGPoint(x: centerX + 180, y: centerY + 200), // Adjusted position
-            difficulty: "Medium",
             icon: "sparkles.rectangle.stack",
             isLocked: progress.completedScenarios["s1B2b"]?.isLocked ?? true
         )
         
         // Connect scenarios
+        s1S.connectTo(s1)
+        
         s1.connectTo(s1A)
         s1.connectTo(s1B)
         
@@ -538,7 +533,7 @@ struct GameMapView: View {
         s1B2.connectTo(s1B2a)
         s1B2.connectTo(s1B2b)
         
-        let allScenarios = [s1, s1A, s1B, s1A1, s1A2, s1A1a, s1A1b, s1A2a, s1A2b, s1B1, s1B2, s1B1a, s1B1b, s1B2a, s1B2b]
+        let allScenarios = [s1S, s1, s1A, s1B, s1A1, s1A2, s1A1a, s1A1b, s1A2a, s1A2b, s1B1, s1B2, s1B1a, s1B1b, s1B2a, s1B2b]
         
         // Print the locked status of all scenarios before updating visibility
 //        print("\n===== SCENARIO STATUS BEFORE VISIBILITY UPDATE =====")
@@ -704,7 +699,7 @@ struct ScenarioDetailView: View {
                     // Start Button
                     if !scenario.isLocked {
                         Button {
-                            if scenario.codeName == "s1" {
+                            if scenario.codeName == "s1S" {
                                 // Post notification after a slight delay to avoid immediate dismissal
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                     NotificationCenter.default.post(name: NSNotification.Name("ForceGameMapRefresh"), object: nil)

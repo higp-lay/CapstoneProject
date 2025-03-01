@@ -13,42 +13,34 @@ struct s1B2b: View {
         [
             DialogueItem(
                 text: "My life was worth the journey. One might say there were many mishaps. I lost my partner, got cancer, didn't manage to receive a transplant, suffered a lot near the end of my life…",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "I never lived to get the chance to take a break from all the hustle. I did not manage to see Mark or Nick getting married—if they at all did.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "Life is a brief-lived candle, and the fact is, no joy is guaranteed for the self. Some might feel they are burning in an inferno, while some feel that they are illuminating the world.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "But if life is a brief-lived candle, all I wish for is that I get lit for as long as I can, and then pass the light on to others.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "But anyhow, I was fortunate enough to make my own choices in life. My choice was to ensure that my children live a good life.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "You see, if I had paid for that expensive therapy, I might live for another 10 years. 15 years? But my kids would have a hard life.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "At least now they inherited my lottery money, pensions and savings. I know, from my experience, how worrying about money can be such a hurdle to enjoying life.",
-                systemImage: "person.fill",
                 speaker: "You"
             ),
             DialogueItem(
                 text: "On Earth we might not be the lucky ones, but I'm glad to have made my children the luckier ones. That's all that matters to me.",
-                systemImage: "person.fill",
                 speaker: "You"
             )
         ]
@@ -71,7 +63,7 @@ struct s1B2b: View {
     var body: some View {
         NavigationStack {
             StoryView(
-                title: "Passing the Light",
+                title: "Passing on the Light",
                 dialogues: Self.initialDialogues,
                 choices: [],
                 onComplete: safeOnComplete, // Use the safe wrapper

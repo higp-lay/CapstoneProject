@@ -11,8 +11,8 @@ struct Achievement: Codable, Identifiable {
     static let allAchievements: [Achievement] = [
         Achievement(
             id: "first_login",
-            title: "Beginning of a Journey",
-            description: "Start your medical journey by logging into the game for the first time.",
+            title: "Journey Begins",
+            description: "Start your journey by logging into the game for the first time.",
             icon: "star.fill",
             dateUnlocked: nil,
             isUnlocked: false
@@ -20,7 +20,7 @@ struct Achievement: Codable, Identifiable {
         Achievement(
             id: "first_decision",
             title: "First Decision",
-            description: "Make your first medical decision in the Initial Decision scenario.",
+            description: "Make your first ever decision.",
             icon: "brain.head.profile",
             dateUnlocked: nil,
             isUnlocked: false
@@ -28,7 +28,7 @@ struct Achievement: Codable, Identifiable {
         Achievement(
             id: "reached_terminal_node",
             title: "Path Completed",
-            description: "Reach any terminal node in the storyline.",
+            description: "Fully complete a storyline.",
             icon: "flag.checkered",
             dateUnlocked: nil,
             isUnlocked: false
@@ -36,7 +36,7 @@ struct Achievement: Codable, Identifiable {
         Achievement(
             id: "story_completed",
             title: "Full Circle",
-            description: "Complete an entire story from beginning to end.",
+            description: "Complete an entire story.",
             icon: "book.closed.fill",
             dateUnlocked: nil,
             isUnlocked: false

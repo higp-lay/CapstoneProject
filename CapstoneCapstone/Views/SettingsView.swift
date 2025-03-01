@@ -1,6 +1,5 @@
 import SwiftUI
 import CommonCrypto
-import CapstoneCapstone
 
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
@@ -48,9 +47,9 @@ struct SettingsView: View {
                     Button(action: {
                         showingLanguageSheet = true
                     }) {
-                        HStack {
+                    HStack {
                             Image(systemName: "globe")
-                                .foregroundColor(.blue)
+                            .foregroundColor(.blue)
                             Text("Language")
                             Spacer()
                             Text(selectedLanguage)
@@ -113,7 +112,7 @@ struct SettingsView: View {
                     Text("Life Lines")
                         .font(.headline)
                     
-                    Text("Version 1.0.2")
+                    Text("Version 1.1.1")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
@@ -441,4 +440,4 @@ extension Data {
 
 #Preview {
     SettingsView()
-}
+} 

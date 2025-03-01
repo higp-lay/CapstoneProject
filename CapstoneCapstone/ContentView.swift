@@ -122,7 +122,7 @@ struct ContentView: View {
                                 .foregroundColor(.gray)
                         }
                         Spacer()
-                        Text("v 1.0.2")
+                        Text("v 1.1.1")
                             .font(.footnote)
                             .foregroundColor(.gray)
                             .padding(.horizontal, 10)
