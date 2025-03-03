@@ -1,5 +1,9 @@
 import Foundation
 
+// Import the file containing AchievementManager
+// This assumes Achievement.swift is in the same module
+import SwiftUI
+
 struct UserProgress: Codable {
     var completedScenarios: [String: ScenarioProgress]
     
@@ -221,20 +225,39 @@ class ProgressManager {
     func checkStoryCompletion(for storyPrefix: String) {
         print("Checking story completion for prefix: \(storyPrefix)")
         
+        // Make sure we're using a valid story prefix (should start with 's' followed by a number)
+        // If the prefix doesn't match the pattern, assume it's a display title and use "s1" as default
+        let validPrefix: String
+        if storyPrefix.hasPrefix("s") && storyPrefix.count >= 2 && storyPrefix.contains(where: { $0.isNumber }) {
+            validPrefix = storyPrefix
+        } else {
+            // Default to "s1" if the prefix doesn't match the expected pattern
+            validPrefix = "s1"
+            print("Invalid story prefix: \"\(storyPrefix)\", using default prefix \"s1\" instead")
+        }
+        
         // Get all scenarios that belong to this story
-        let storyScenarios = currentProgress.completedScenarios.filter { $0.key.hasPrefix(storyPrefix) }
+        let storyScenarios = currentProgress.completedScenarios.filter { $0.key.hasPrefix(validPrefix) }
         
         // Check if all scenarios in the story are completed
         let allCompleted = storyScenarios.allSatisfy { $0.value.isCompleted }
         
-        // If all scenarios are completed, post a notification
-        if allCompleted && !storyScenarios.isEmpty {
-            print("All scenarios in story \(storyPrefix) are completed!")
+        // Count how many scenarios are completed
+        let completedCount = storyScenarios.filter { $0.value.isCompleted }.count
+        let totalCount = storyScenarios.count
+        
+        print("Story \(validPrefix) completion: \(completedCount)/\(totalCount) nodes completed")
+        
+        // If all scenarios are completed, post a notification for the "Full Circle" achievement
+        if allCompleted && !storyScenarios.isEmpty && completedCount >= totalCount {
+            print("All scenarios in story \(validPrefix) are completed! (\(completedCount)/\(totalCount))")
             
             // Post a notification that will be handled by AchievementManager
             DispatchQueue.main.async {
-                NotificationCenter.default.post(name: NSNotification.Name("StoryCompleted"), object: nil)
+                NotificationCenter.default.post(name: NSNotification.Name("FullStoryCompleted"), object: nil)
             }
+        } else {
+            print("Story not yet complete. \(completedCount)/\(totalCount) nodes completed.")
         }
     }
     

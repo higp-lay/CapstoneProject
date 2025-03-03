@@ -1,5 +1,8 @@
 import SwiftUI
 import Foundation
+#if os(iOS)
+import UIKit
+#endif
 
 @available(iOS 13.0, macOS 12.0, *)
 struct DialogueBox: View {
@@ -117,6 +120,17 @@ struct StoryView: View {
         return UserSettingsManager.shared.currentSettings.ttsEnabled
     }
     
+    // Add haptic feedback function
+    private func triggerHapticFeedback() {
+        // Check if haptic feedback is enabled in settings
+        guard UserSettingsManager.shared.currentSettings.hapticEnabled else { return }
+        
+        #if os(iOS)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        #endif
+    }
+    
     // Add a method to determine voice type based on speaker
     private func getVoiceForSpeaker(_ speaker: String) -> VoiceType {
         // Define which speakers use which voice types
@@ -221,7 +235,7 @@ struct StoryView: View {
         // Apply transition effect from TransitionManager
         .opacity(transitionManager.isTransitioning ? 0 : 1)
         .animation(.easeInOut(duration: 0.3), value: transitionManager.isTransitioning)
-        // Add achievement popup overlay
+        // Add achievement popup overlay with high zIndex to ensure it's on top
         .overlay {
             if achievementNotificationManager.showingAchievement,
                let achievement = achievementNotificationManager.currentAchievement {
@@ -229,13 +243,7 @@ struct StoryView: View {
                     achievement: achievement,
                     isPresented: $achievementNotificationManager.showingAchievement
                 )
-            }
-        }
-        .onAppear {
-            // Check if this is a terminal node (ends with a letter)
-            if title.count >= 5 && title.last?.isLetter == true {
-                // Check if the entire story is completed
-                ProgressManager.shared.checkStoryCompletion(for: String(title.prefix(2)))
+                .zIndex(1000) // Ensure it's on the top layer
             }
         }
     }
@@ -256,7 +264,10 @@ struct StoryView: View {
             } else {
                 // Show a loading placeholder if dialogues aren't loaded yet
                 VStack {
-                    Text("Loading story...\n\nIf this persists, please exit and restart the story.")
+                    Text("Loading story...")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Text("If this persists, please exit and restart the story.")
                         .font(.headline)
                         .foregroundColor(.secondary)
                 }
@@ -326,6 +337,9 @@ struct StoryView: View {
                             if isTTSEnabled {
                                 tts.stopSpeech()
                             }
+                            
+                            // Trigger haptic feedback
+                            triggerHapticFeedback()
                             
                             showingConfirmation = false
                             hasChosen = true
@@ -427,12 +441,50 @@ struct StoryView: View {
                         tts.stopSpeech()
                     }
                     
-                    // Exit after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        exitStory()
+                    // Trigger haptic feedback
+                    triggerHapticFeedback()
+                    
+                    // Queue the "Path Completed" achievement instead of showing it immediately
+                    AchievementManager.shared.queueAchievement(id: "reached_terminal_node")
+                    
+                    // Mark this scenario as completed in ProgressManager
+                    ProgressManager.shared.completeScenario(title)
+                    
+                    // Check if completing this node completes the entire story
+                    // Use "s1" directly instead of trying to extract it from the title
+                    // The title is the display title (like "Joy") not the codeName (like "s1A1a")
+                    ProgressManager.shared.checkStoryCompletion(for: "s1")
+                    
+                    // Set transition state to true for smooth exit
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        transitionManager.isTransitioning = true
+                        isExiting = true
                     }
                     
+                    // Notify to refresh the game map
                     NotificationCenter.default.post(name: NSNotification.Name("ForceGameMapRefresh"), object: nil)
+                    
+                    // Prevent multiple dismissals
+                    hasDismissed = true
+                    
+                    // Exit after a short delay - use onComplete handler if available
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        if let customDismiss = onDismiss {
+                            customDismiss()
+                        } else if let complete = onComplete {
+                            complete()
+                        } else {
+                            dismiss()
+                        }
+                        
+                        // Post a notification that we've returned to the map
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            NotificationCenter.default.post(name: NSNotification.Name("ReturnedToMap"), object: nil)
+                            
+                            // Also post a final notification to ensure the map is refreshed after dismissal
+                            NotificationCenter.default.post(name: NSNotification.Name("ForceGameMapRefresh"), object: nil)
+                        }
+                    }
                 } label: {
                     Text("Complete Story")
                         .font(.headline)
@@ -522,6 +574,9 @@ struct StoryView: View {
     }
     
     private func handleOnAppear() {
+        // Post notification that we've entered a story view
+        NotificationCenter.default.post(name: NSNotification.Name("EnterStoryView"), object: nil)
+        
         // Reset transition state when view appears
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             // Force reset transition state to ensure we're not stuck in a transition
@@ -562,18 +617,33 @@ struct StoryView: View {
             tts.stopSpeech()
         }
         
-        // Set transition state to true for smooth exit
-        withAnimation(.easeOut(duration: 0.3)) {
-            transitionManager.isTransitioning = true
-            isExiting = true
+        // Only set transition state if not already set (prevents double animation)
+        if !transitionManager.isTransitioning {
+            withAnimation(.easeOut(duration: 0.3)) {
+                transitionManager.isTransitioning = true
+                isExiting = true
+            }
         }
+        
+        // Force refresh the game map before dismissing
+        NotificationCenter.default.post(name: NSNotification.Name("ForceGameMapRefresh"), object: nil)
         
         // Then dismiss after a short delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             if let customDismiss = onDismiss {
                 customDismiss()
+            } else if let complete = onComplete {
+                complete()
             } else {
                 dismiss()
+            }
+            
+            // Post a notification that we've returned to the map
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                NotificationCenter.default.post(name: NSNotification.Name("ReturnedToMap"), object: nil)
+                
+                // Also post a final notification to ensure the map is refreshed after dismissal
+                NotificationCenter.default.post(name: NSNotification.Name("ForceGameMapRefresh"), object: nil)
             }
         }
     }

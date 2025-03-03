@@ -1,72 +1,59 @@
 import SwiftUI
 
+// Reference to the AchievementData struct from AchievementNotificationManager.swift
 struct AchievementPopupView: View {
-    let achievement: Achievement
+    let achievement: AchievementData
     @Binding var isPresented: Bool
     
     var body: some View {
-        GeometryReader { geometry in
-            VStack {
-                Spacer() // Push content to the bottom
+        VStack {
+            Spacer()
+            
+            HStack(spacing: 16) {
+                // Trophy icon or custom icon
+                Image(systemName: achievement.icon)
+                    .font(.system(size: 30))
+                    .foregroundColor(.yellow)
+                    .shadow(color: .orange.opacity(0.5), radius: 2, x: 0, y: 1)
                 
-                HStack(spacing: 15) {
-                    // Achievement Icon
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.1))
-                            .frame(width: 50, height: 50)
-                        
-                        Image(systemName: achievement.icon)
-                            .font(.system(size: 25))
-                            .foregroundColor(.blue)
-                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Achievement Unlocked!")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
                     
-                    // Achievement Details
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Achievement Unlocked!")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        
-                        Text(achievement.title)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text(achievement.description)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
+                    Text(achievement.title)
+                        .font(.title3)
+                        .fontWeight(.bold)
                     
-                    Spacer()
-                    
-                    // Close Button
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            isPresented = false
-                        }
-                    } label: {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.gray)
-                            .font(.system(size: 16, weight: .medium))
-                    }
+                    Text(achievement.description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 15)
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.1), radius: 10)
-                )
-                .padding(.horizontal)
-                .padding(.bottom, geometry.safeAreaInsets.bottom + 10) // Add bottom padding instead of top
+                
+                Spacer()
+                
+                // Close button
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isPresented = false
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity)) // Change transition to bottom
-        }
-        .ignoresSafeArea()
-        .background(Color.black.opacity(0.001)) // Allows taps to dismiss
-        .onTapGesture {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                isPresented = false
-            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.secondarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+            )
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 } 

@@ -18,12 +18,12 @@ enum VoiceType: String {
 }
 
 let ttsAPIUrl = "https://texttospeech.googleapis.com/v1beta1/text:synthesize"
-let APIKey = ""
 
 class SpeechService: NSObject, AVAudioPlayerDelegate {
 
     static let shared = SpeechService()
     internal(set) var busy: Bool = false
+    internal(set) var apiKeyMissing: Bool = false
     
     internal var player: AVAudioPlayer?
     private var completionHandler: (() -> Void)?
@@ -34,11 +34,25 @@ class SpeechService: NSObject, AVAudioPlayerDelegate {
             return
         }
         
+        // Get API key from UserSettings
+        let apiKey = UserSettingsManager.shared.currentSettings.ttsApiKey
+        
+        // Check if API key is empty
+        guard !apiKey.isEmpty else {
+            print("API Key is missing!")
+            self.apiKeyMissing = true
+            DispatchQueue.main.async {
+                completion()
+            }
+            return
+        }
+        
+        self.apiKeyMissing = false
         self.busy = true
         
         DispatchQueue.global(qos: .background).async {
             let postData = self.buildPostData(text: text, voiceType: voiceType)
-            let headers = ["X-Goog-Api-Key": APIKey, "Content-Type": "application/json; charset=utf-8"]
+            let headers = ["X-Goog-Api-Key": apiKey, "Content-Type": "application/json; charset=utf-8"]
             let response = self.makePOSTRequest(url: ttsAPIUrl, postData: postData, headers: headers)
 
             // Get the `audioContent` (as a base64 encoded string) from the response.
@@ -139,8 +153,16 @@ class SpeechService: NSObject, AVAudioPlayerDelegate {
 @available(iOS 13.0, macOS 12.0, *)
 class TTS {
     func textToSpeech(_ text: String, voiceType: VoiceType) {
+        // Check if TTS is enabled in settings
+        guard UserSettingsManager.shared.currentSettings.ttsEnabled else {
+            return
+        }
+        
         SpeechService.shared.speak(text: text, voiceType: voiceType) {
-            
+            // If API key is missing, show the API key dialog
+            if SpeechService.shared.apiKeyMissing {
+                NotificationCenter.default.post(name: NSNotification.Name("ShowTTSAPIKeyDialog"), object: nil)
+            }
         }
     }
     

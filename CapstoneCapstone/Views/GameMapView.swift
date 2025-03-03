@@ -118,6 +118,9 @@ struct GameMapView: View {
     @State private var showingAchievements = false
     @State private var scrollViewProxy: ScrollViewProxy? = nil
     
+    // Add achievement notification manager
+    @ObservedObject private var achievementNotificationManager = AchievementNotificationManager.shared
+    
     // Add constants for node and map size
     private let nodeSize = CGSize(width: 60, height: 60)
     private var mapSize: CGSize {
@@ -142,14 +145,14 @@ struct GameMapView: View {
                 #endif
                 
                 // Map content
-        GeometryReader { geometry in
+                GeometryReader { geometry in
                     // Use ScrollViewReader to programmatically scroll to the first node
                     ScrollViewReader { scrollProxy in
                         // Remove the VStack and Spacer that are creating the white border
                         ZStack {
                             // Scrollable content
-            ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                ZStack {
+                            ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                                ZStack {
                                     // Background grid for visual reference
                                     GridBackground(mapSize: mapSize)
                                         .opacity(0.1)
@@ -214,6 +217,9 @@ struct GameMapView: View {
                         
                         // Use onAppear to scroll to the center of the map
                         .onAppear {
+                            // Post notification that we've returned to the map
+                            NotificationCenter.default.post(name: NSNotification.Name("ReturnedToMap"), object: nil)
+                            
                             // Delay to ensure layout is complete
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 // Scroll to the center anchor
@@ -226,7 +232,17 @@ struct GameMapView: View {
                     }
                 }
                 
-                // UI Controls - Trophy button removed
+                // Add achievement popup overlay with high zIndex to ensure it's on top
+                .overlay {
+                    if achievementNotificationManager.showingAchievement,
+                       let achievement = achievementNotificationManager.currentAchievement {
+                        AchievementPopupView(
+                            achievement: achievement,
+                            isPresented: $achievementNotificationManager.showingAchievement
+                        )
+                        .zIndex(1000) // Ensure it's on the top layer
+                    }
+                }
             }
             // Add padding to the top to eliminate the empty space
             .padding(.top, 8)
@@ -276,15 +292,6 @@ struct GameMapView: View {
                 }
             }
         }
-//        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ProgressUpdated"))) { _ in
-//            refreshMap()
-//        }
-//        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScenarioUnlocked"))) { _ in
-//            refreshMap()
-//        }
-//        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScenarioCompleted"))) { _ in
-//            refreshMap()
-//        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ForceGameMapRefresh"))) { _ in
             refreshMap()
         }

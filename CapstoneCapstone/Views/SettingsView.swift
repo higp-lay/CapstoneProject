@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 import CommonCrypto
 
 struct SettingsView: View {
@@ -20,6 +21,8 @@ struct SettingsView: View {
     @State private var playerName = UserSettingsManager.shared.currentSettings.playerName
     @State private var showingNameChangeAlert = false
     @State private var newName = ""
+    @State private var showingTTSApiKeyDialog = false
+    @State private var ttsApiKey = UserSettingsManager.shared.currentSettings.ttsApiKey
     
     private let encryptedPassword = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
     
@@ -112,11 +115,16 @@ struct SettingsView: View {
                     Text("Life Lines")
                         .font(.headline)
                     
-                    Text("Version 1.1.1")
+                    Text("Version 1.1.2")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
                     Text("Life Lines is an interactive narrative experience that explores profound ethical dilemmas and life-altering decisions. Navigate through branching storylines where your choices shape your character's journey and ultimate fate. Each decision you make opens new paths and closes others, revealing different perspectives on themes of identity, mortality, family, and legacy.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 5)
+                        
+                    Text("Any resemblance to actual events or locales or persons, living or dead, is entirely coincidental.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 5)
@@ -305,8 +313,28 @@ struct SettingsView: View {
             } message: {
                 Text("Please enter your new name")
             }
+            .alert("Configure TTS API Key", isPresented: $showingTTSApiKeyDialog) {
+                SecureField("Enter Google Cloud API Key", text: $ttsApiKey)
+                Button("Cancel", role: .cancel) { }
+                Button("Save") {
+                    UserSettingsManager.shared.currentSettings.ttsApiKey = ttsApiKey
+                    // If API key is empty, disable TTS
+                    if ttsApiKey.isEmpty {
+                        ttsEnabled = false
+                        UserSettingsManager.shared.currentSettings.ttsEnabled = false
+                    }
+                }
+            } message: {
+                Text("Enter your Google Cloud Text-to-Speech API key. You can get one from the Google Cloud Console.")
+            }
             .sheet(isPresented: $showingLanguageSheet) {
                 LanguageSelectionView(selectedLanguage: $selectedLanguage)
+            }
+        }
+        .onAppear {
+            // Set up notification observer for TTS API key dialog
+            NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowTTSAPIKeyDialog"), object: nil, queue: .main) { _ in
+                showingTTSApiKeyDialog = true
             }
         }
     }
